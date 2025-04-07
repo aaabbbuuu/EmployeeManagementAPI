@@ -38,11 +38,17 @@ A simple Web API built with **ASP.NET Core**, **Entity Framework Core**, and **S
 	}
 	```
 3.  **Run Migrations**
+	```
 	dotnet ef database update
+	```
 4.  **Run the app**
+	```
 	dotnet run
+	```
 5.  **Test via Swagger**
+	```
 	Visit: https://localhost:5001/swagger
+	```
 
 ### Sample Payloads
 **Create Department**
