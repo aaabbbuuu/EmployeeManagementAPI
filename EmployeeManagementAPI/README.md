@@ -37,7 +37,6 @@ A simple Web API built with **ASP.NET Core**, **Entity Framework Core**, and **S
 		"DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=EmployeeDB;Trusted_Connection=True;TrustServerCertificate=True;"
 	}
 	```
-	"DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=EmployeeDB;Trusted_Connection=True;TrustServerCertificate=True;"
 3.  **Run Migrations**
 	dotnet ef database update
 4.  **Run the app**
