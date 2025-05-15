@@ -1,0 +1,72 @@
+# Prerequisites
+*.dockerignore
+Dockerfile
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / Build KITS
+.vs/
+*.VC.db
+TestResults/
+.grunt/
+*.[Pp]ublish.xml
+*.azurePubxml
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, compile/, and frameworks/ folders in the packages directory
+!**/[Pp]ackages/build/
+!**/[Pp]ackages/compile/
+!**/[Pp]ackages/frameworks/
+# Visual Studio cache files
+# files ending in .cache can be ignored
+*.[Cc]ache
+# But important files shouldn't be ignored (e.g. an Entity Framework Data Cache)
+!*.[Ee][Dd][Mm][Xx]
+# Roslyn compiler cache files
+*.roslyncodefileomitterextension
+
+# Rider
+.idea/
+*.sln.iml
+
+# Mac
+.DS_Store
+
+# ASP.NET Scaffolding
+**/ScaffoldingReadMe.txt
+
+# Env files
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Local secrets
+secrets.json
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Example.json
+!appsettings.Production.json

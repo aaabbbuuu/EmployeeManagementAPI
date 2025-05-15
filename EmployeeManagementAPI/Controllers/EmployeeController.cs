@@ -1,45 +1,84 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EmployeeManagementAPI.Data;
-using EmployeeManagementAPI.Models;
+using EmployeeManagementAPI.DTOs;
+using EmployeeManagementAPI.Services;
 
-[Route("api/[controller]")]
-[ApiController]
-public class EmployeeController : ControllerBase
+namespace EmployeeManagementAPI.Controllers 
 {
-    private readonly AppDbContext _context;
-
-    public EmployeeController(AppDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class EmployeeController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IEmployeeService _employeeService;
+        private readonly ILogger<EmployeeController> _logger;
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees()
-    {
-        var employees = await _context.Employees
-            .Include(e => e.Department)
-            .ToListAsync();
+        public EmployeeController(IEmployeeService employeeService, ILogger<EmployeeController> logger)
+        {
+            _employeeService = employeeService;
+            _logger = logger;
+        }
 
-        return Ok(employees);
-    }
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetEmployees()
+        {
+            var employees = await _employeeService.GetAllEmployeesAsync();
+            return Ok(employees);
+        }
 
-    [HttpPost]
-    public async Task<ActionResult<Employee>> CreateEmployee([FromBody] Employee employee)
-    {
-        if (employee == null)
-            return BadRequest("Employee cannot be null.");
+        [HttpGet("{id}")]
+        public async Task<ActionResult<EmployeeDto>> GetEmployee(int id)
+        {
+            var employee = await _employeeService.GetEmployeeByIdAsync(id);
+            if (employee == null)
+            {
+                _logger.LogWarning("Employee with ID {EmployeeId} not found.", id);
+                return NotFound(new { Message = $"Employee with ID {id} not found." });
+            }
+            return Ok(employee);
+        }
 
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        [HttpPost]
+        public async Task<ActionResult<EmployeeDto>> CreateEmployee([FromBody] CreateEmployeeDto createEmployeeDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-        var departmentExists = await _context.Departments.AnyAsync(d => d.Id == employee.DepartmentId);
-        if (!departmentExists)
-            return NotFound($"Department with ID {employee.DepartmentId} not found.");
+            var newEmployee = await _employeeService.CreateEmployeeAsync(createEmployeeDto);
+            if (newEmployee == null)
+            {
+                _logger.LogWarning("Failed to create employee. Department ID {DepartmentId} might not exist.", createEmployeeDto.DepartmentId);
+                return BadRequest(new { Message = $"Department with ID {createEmployeeDto.DepartmentId} not found." });
+            }
+            return CreatedAtAction(nameof(GetEmployee), new { id = newEmployee.Id }, newEmployee);
+        }
 
-        _context.Employees.Add(employee);
-        await _context.SaveChangesAsync();
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] UpdateEmployeeDto updateEmployeeDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var success = await _employeeService.UpdateEmployeeAsync(id, updateEmployeeDto);
+            if (!success)
+            {
+                _logger.LogWarning("Failed to update employee with ID {EmployeeId}. It might not exist or target department is invalid.", id);
+                return NotFound(new { Message = $"Employee with ID {id} not found or associated department ID {updateEmployeeDto.DepartmentId} is invalid." });
+            }
+            return NoContent();
+        }
 
-        return CreatedAtAction(nameof(GetEmployees), new { id = employee.Id }, employee);
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteEmployee(int id)
+        {
+            var success = await _employeeService.DeleteEmployeeAsync(id);
+            if (!success)
+            {
+                _logger.LogWarning("Failed to delete employee with ID {EmployeeId}. It might not exist.", id);
+                return NotFound(new { Message = $"Employee with ID {id} not found." });
+            }
+            return NoContent();
+        }
     }
 }
