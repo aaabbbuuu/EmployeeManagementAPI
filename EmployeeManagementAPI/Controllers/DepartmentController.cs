@@ -1,41 +1,78 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EmployeeManagementAPI.Data;
-using EmployeeManagementAPI.Models;
+using EmployeeManagementAPI.DTOs;
+using EmployeeManagementAPI.Services;
 
-[Route("api/[controller]")]
-[ApiController]
-public class DepartmentController : ControllerBase
+namespace EmployeeManagementAPI.Controllers
 {
-    private readonly AppDbContext _context;
-
-    public DepartmentController(AppDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class DepartmentController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IDepartmentService _departmentService;
+        private readonly ILogger<DepartmentController> _logger;
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Department>>> GetDepartments()
-    {
-        var departments = await _context.Departments
-            .Include(d => d.Employees)
-            .ToListAsync();
+        public DepartmentController(IDepartmentService departmentService, ILogger<DepartmentController> logger)
+        {
+            _departmentService = departmentService;
+            _logger = logger;
+        }
 
-        return Ok(departments);
-    }
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<DepartmentDto>>> GetDepartments()
+        {
+            var departments = await _departmentService.GetAllDepartmentsAsync();
+            return Ok(departments);
+        }
 
-    [HttpPost]
-    public async Task<ActionResult<Department>> CreateDepartment([FromBody] Department department)
-    {
-        if (department == null)
-            return BadRequest("Department cannot be null.");
+        [HttpGet("{id}")]
+        public async Task<ActionResult<DepartmentDto>> GetDepartment(int id)
+        {
+            var department = await _departmentService.GetDepartmentByIdAsync(id);
+            if (department == null)
+            {
+                _logger.LogWarning("Department with ID {DepartmentId} not found.", id);
+                return NotFound(new { Message = $"Department with ID {id} not found." });
+            }
+            return Ok(department);
+        }
 
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        [HttpPost]
+        public async Task<ActionResult<DepartmentDto>> CreateDepartment([FromBody] CreateDepartmentDto createDepartmentDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var newDepartment = await _departmentService.CreateDepartmentAsync(createDepartmentDto);
+            return CreatedAtAction(nameof(GetDepartment), new { id = newDepartment.Id }, newDepartment);
+        }
 
-        _context.Departments.Add(department);
-        await _context.SaveChangesAsync();
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateDepartment(int id, [FromBody] UpdateDepartmentDto updateDepartmentDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var success = await _departmentService.UpdateDepartmentAsync(id, updateDepartmentDto);
+            if (!success)
+            {
+                _logger.LogWarning("Failed to update department with ID {DepartmentId}. It might not exist.", id);
+                return NotFound(new { Message = $"Department with ID {id} not found or update failed." });
+            }
+            return NoContent(); 
+        }
 
-        return CreatedAtAction(nameof(GetDepartments), new { id = department.Id }, department);
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteDepartment(int id)
+        {
+            var success = await _departmentService.DeleteDepartmentAsync(id);
+            if (!success)
+            {
+                _logger.LogWarning("Failed to delete department with ID {DepartmentId}. It might not exist or has dependencies.", id);
+                return NotFound(new { Message = $"Department with ID {id} not found or cannot be deleted (e.g., has employees)." });
+            }
+            return NoContent();
+        }
     }
 }
